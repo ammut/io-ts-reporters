@@ -29,6 +29,9 @@ import {takeUntil} from './utils'
 
 const isUnionType = ({type}: t.ContextEntry) => type instanceof t.UnionType
 
+const isTaggedUnionType = ({type}: t.ContextEntry) =>
+  type instanceof t.TaggedUnionType
+
 const jsToString = (value: t.mixed) =>
   value === undefined ? 'undefined' : JSON.stringify(value)
 
@@ -105,6 +108,7 @@ const findExpectedType = (ctx: t.ContextEntry[]) =>
     ctx,
     A.findIndex(isUnionType),
     O.chain((n) => A.lookup(n + 1, ctx)),
+    O.alt(() => A.last(ctx)),
   )
 
 const formatValidationErrorOfUnion = (
@@ -150,12 +154,16 @@ const groupByKey = NEA.groupBy((error: t.ValidationError) =>
   pipe(error.context, takeUntil(isUnionType), keyPath),
 )
 
+const causeIsUnion = (errors: NEA.NonEmptyArray<t.ValidationError>): boolean =>
+  pipe(errors, NEA.tail, A.isNonEmpty) ||
+  pipe(errors, NEA.head, getValidationContext, A.some(isTaggedUnionType))
+
 const format = (
   path: string,
   errors: NEA.NonEmptyArray<t.ValidationError>,
   options?: ReporterOptions,
 ) =>
-  NEA.tail(errors).length > 0
+  causeIsUnion(errors)
     ? formatValidationErrorOfUnion(path, errors, options)
     : formatValidationCommonError(path, NEA.head(errors), options)
 

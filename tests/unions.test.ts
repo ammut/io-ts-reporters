@@ -77,19 +77,35 @@ test('tagged unions', (t) => {
   const WithUnion = iots.interface({data: UnionOfInterfaces})
 
   t.deepEqual(Reporter.report(WithUnion.decode({})), [
-    'Expecting ({ _tag: "key", key: string } | { _tag: "code", code: number }) at data but instead got: undefined',
+    [
+      'Expecting one of:',
+      '    ({ _tag: "key", key: string } | { _tag: "code", code: number })',
+      'at data but instead got: undefined',
+    ].join('\n'),
   ])
 
   t.deepEqual(Reporter.report(WithUnion.decode({data: ''})), [
-    'Expecting ({ _tag: "key", key: string } | { _tag: "code", code: number }) at data but instead got: ""',
+    [
+      'Expecting one of:',
+      '    ({ _tag: "key", key: string } | { _tag: "code", code: number })',
+      'at data but instead got: ""',
+    ].join('\n'),
   ])
 
   t.deepEqual(Reporter.report(WithUnion.decode({data: {}})), [
-    'Expecting ({ _tag: "key", key: string } | { _tag: "code", code: number }) at data but instead got: {}',
+    [
+      'Expecting one of:',
+      '    ({ _tag: "key", key: string } | { _tag: "code", code: number })',
+      'at data but instead got: {}',
+    ].join('\n'),
   ])
 
   t.deepEqual(Reporter.report(WithUnion.decode({data: {code: '123'}})), [
-    'Expecting ({ _tag: "key", key: string } | { _tag: "code", code: number }) at data but instead got: {"code":"123"}',
+    [
+      'Expecting one of:',
+      '    ({ _tag: "key", key: string } | { _tag: "code", code: number })',
+      'at data but instead got: {"code":"123"}',
+    ].join('\n'),
   ])
 
   t.deepEqual(
@@ -99,7 +115,11 @@ test('tagged unions', (t) => {
       }),
     ),
     [
-      'Expecting ({ _tag: "key", key: string } | { _tag: "code", code: number }) at data but instead got: {"_tag":"bogus","code":"123"}',
+      [
+        'Expecting one of:',
+        '    ({ _tag: "key", key: string } | { _tag: "code", code: number })',
+        'at data but instead got: {"_tag":"bogus","code":"123"}',
+      ].join('\n'),
     ],
   )
 
@@ -109,7 +129,13 @@ test('tagged unions', (t) => {
         data: {_tag: 'code', code: '123'},
       }),
     ),
-    ['Expecting number at data but instead got: "123"'],
+    [
+      [
+        'Expecting one of:',
+        '    { _tag: "code", code: number }',
+        'at data but instead got: {"_tag":"code","code":"123"}',
+      ].join('\n'),
+    ],
   )
 })
 

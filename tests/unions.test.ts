@@ -69,6 +69,50 @@ test('union of interfaces', (t) => {
   ])
 })
 
+test('tagged unions', (t) => {
+  const UnionOfInterfaces = iots.union([
+    iots.interface({_tag: iots.literal('key'), key: iots.string}),
+    iots.interface({_tag: iots.literal('code'), code: iots.number}),
+  ])
+  const WithUnion = iots.interface({data: UnionOfInterfaces})
+
+  t.deepEqual(Reporter.report(WithUnion.decode({})), [
+    'Expecting ({ _tag: "key", key: string } | { _tag: "code", code: number }) at data but instead got: undefined',
+  ])
+
+  t.deepEqual(Reporter.report(WithUnion.decode({data: ''})), [
+    'Expecting ({ _tag: "key", key: string } | { _tag: "code", code: number }) at data but instead got: ""',
+  ])
+
+  t.deepEqual(Reporter.report(WithUnion.decode({data: {}})), [
+    'Expecting ({ _tag: "key", key: string } | { _tag: "code", code: number }) at data but instead got: {}',
+  ])
+
+  t.deepEqual(Reporter.report(WithUnion.decode({data: {code: '123'}})), [
+    'Expecting ({ _tag: "key", key: string } | { _tag: "code", code: number }) at data but instead got: {"code":"123"}',
+  ])
+
+  t.deepEqual(
+    Reporter.report(
+      WithUnion.decode({
+        data: {_tag: 'bogus', code: '123'},
+      }),
+    ),
+    [
+      'Expecting ({ _tag: "key", key: string } | { _tag: "code", code: number }) at data but instead got: {"_tag":"bogus","code":"123"}',
+    ],
+  )
+
+  t.deepEqual(
+    Reporter.report(
+      WithUnion.decode({
+        data: {_tag: 'code', code: '123'},
+      }),
+    ),
+    ['Expecting number at data but instead got: "123"'],
+  )
+})
+
 const Gender = iots.union([
   iots.literal('Male'),
   iots.literal('Female'),

@@ -29,8 +29,10 @@ import {takeUntil} from './utils'
 
 const isUnionType = ({type}: t.ContextEntry) => type instanceof t.UnionType
 
-const isTaggedUnionType = ({type}: t.ContextEntry) =>
-  type instanceof t.TaggedUnionType
+const isTaggedUnionType = (
+  d: t.Decoder<unknown, any>,
+): d is t.TaggedUnionType<string, Array<t.Any>> =>
+  d instanceof t.TaggedUnionType
 
 const jsToString = (value: t.mixed) =>
   value === undefined ? 'undefined' : JSON.stringify(value)
@@ -108,7 +110,6 @@ const findExpectedType = (ctx: t.ContextEntry[]) =>
     ctx,
     A.findIndex(isUnionType),
     O.chain((n) => A.lookup(n + 1, ctx)),
-    O.alt(() => A.last(ctx)),
   )
 
 const formatValidationErrorOfUnion = (
@@ -137,6 +138,39 @@ const formatValidationErrorOfUnion = (
     : O.none
 }
 
+const formatValidationErrorOfTaggedUnion = (
+  path: string,
+  errors: NEA.NonEmptyArray<t.ValidationError>,
+  options?: ReporterOptions,
+) => {
+  const error = pipe(errors, NEA.head)
+
+  const context = pipe(
+    error,
+    getValidationContext,
+  ) as NEA.NonEmptyArray<t.ContextEntry>
+
+  const expectedTypes = NEA.last(context)
+
+  if (isTaggedUnionType(expectedTypes.type)) {
+    const value = expectedTypes.actual
+
+    const expected = pipe(
+      expectedTypes.type.types,
+      A.map((x) => x.name),
+    )
+
+    return O.some(errorMessageUnion(expected, path, value, options))
+  } else {
+    const pathWithoutIndex = pipe(
+      context,
+      A.filter((x) => !/[0-9]/.test(x.key)),
+      keyPath,
+    )
+    return formatValidationCommonError(pathWithoutIndex, error, options)
+  }
+}
+
 const formatValidationCommonError = (
   path: string,
   error: t.ValidationError,
@@ -155,8 +189,17 @@ const groupByKey = NEA.groupBy((error: t.ValidationError) =>
 )
 
 const causeIsUnion = (errors: NEA.NonEmptyArray<t.ValidationError>): boolean =>
-  pipe(errors, NEA.tail, A.isNonEmpty) ||
-  pipe(errors, NEA.head, getValidationContext, A.some(isTaggedUnionType))
+  pipe(errors, NEA.tail, A.isNonEmpty)
+
+const causeIsTaggedUnion = (
+  errors: NEA.NonEmptyArray<t.ValidationError>,
+): boolean =>
+  pipe(
+    errors,
+    NEA.head,
+    getValidationContext,
+    A.some((x) => isTaggedUnionType(x.type)),
+  )
 
 const format = (
   path: string,
@@ -165,6 +208,8 @@ const format = (
 ) =>
   causeIsUnion(errors)
     ? formatValidationErrorOfUnion(path, errors, options)
+    : causeIsTaggedUnion(errors)
+    ? formatValidationErrorOfTaggedUnion(path, errors, options)
     : formatValidationCommonError(path, NEA.head(errors), options)
 
 /**

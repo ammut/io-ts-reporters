@@ -79,7 +79,8 @@ test('tagged unions', (t) => {
   t.deepEqual(Reporter.report(WithUnion.decode({})), [
     [
       'Expecting one of:',
-      '    ({ _tag: "key", key: string } | { _tag: "code", code: number })',
+      '    { _tag: "key", key: string }',
+      '    { _tag: "code", code: number }',
       'at data but instead got: undefined',
     ].join('\n'),
   ])
@@ -87,7 +88,8 @@ test('tagged unions', (t) => {
   t.deepEqual(Reporter.report(WithUnion.decode({data: ''})), [
     [
       'Expecting one of:',
-      '    ({ _tag: "key", key: string } | { _tag: "code", code: number })',
+      '    { _tag: "key", key: string }',
+      '    { _tag: "code", code: number }',
       'at data but instead got: ""',
     ].join('\n'),
   ])
@@ -95,7 +97,8 @@ test('tagged unions', (t) => {
   t.deepEqual(Reporter.report(WithUnion.decode({data: {}})), [
     [
       'Expecting one of:',
-      '    ({ _tag: "key", key: string } | { _tag: "code", code: number })',
+      '    { _tag: "key", key: string }',
+      '    { _tag: "code", code: number }',
       'at data but instead got: {}',
     ].join('\n'),
   ])
@@ -103,7 +106,8 @@ test('tagged unions', (t) => {
   t.deepEqual(Reporter.report(WithUnion.decode({data: {code: '123'}})), [
     [
       'Expecting one of:',
-      '    ({ _tag: "key", key: string } | { _tag: "code", code: number })',
+      '    { _tag: "key", key: string }',
+      '    { _tag: "code", code: number }',
       'at data but instead got: {"code":"123"}',
     ].join('\n'),
   ])
@@ -117,7 +121,8 @@ test('tagged unions', (t) => {
     [
       [
         'Expecting one of:',
-        '    ({ _tag: "key", key: string } | { _tag: "code", code: number })',
+        '    { _tag: "key", key: string }',
+        '    { _tag: "code", code: number }',
         'at data but instead got: {"_tag":"bogus","code":"123"}',
       ].join('\n'),
     ],
@@ -129,13 +134,7 @@ test('tagged unions', (t) => {
         data: {_tag: 'code', code: '123'},
       }),
     ),
-    [
-      [
-        'Expecting one of:',
-        '    { _tag: "code", code: number }',
-        'at data but instead got: {"_tag":"code","code":"123"}',
-      ].join('\n'),
-    ],
+    [['Expecting number at data.code but instead got: "123"'].join('\n')],
   )
 })
 
